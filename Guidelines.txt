@@ -1,0 +1,7 @@
+1. Do not use Globals
+2. Do not put variables in global namespace, unless it is for main.py
+3. Create separate script files for unit tests.
+4. Put shared constants and methods in Utilities.
+5. Prefix __ for private members in classes
+6. Names should be all lowercase with underscore to separate words
+7. Put spaces after commas
