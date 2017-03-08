@@ -4,14 +4,15 @@ from numpy import asmatrix as arr
 from Utilities import toIndex
 # Adapted from mltools.base.py by Alexander Ihler with permission
 
+
 # Base class for Learners
 class Classifier:
-    __classes = []
     def __init__(self, *args, **kwargs):
         """
         Constructor for base classifier.
         Note: This should never be called, except by the derived classes
         """
+        self.__classes = []
         # The derived classes will have a train method
         if len(args) or len(kwargs):
             return self.train(*args, **kwargs)
@@ -29,9 +30,10 @@ class Classifier:
         :param x: M x N array of M data points with N features each
         :return: None
         """
-        raise NotImplementedError("Derived class has not implemented this method.")
+        idx = np.argmax(self.predict_soft(x), axis=1)
+        return np.asarray(self.__classes)[idx]
 
-    def predictSoft(self, x):
+    def predict_soft(self, x):
         """
         Predicts
         Abstract
@@ -59,7 +61,7 @@ class Classifier:
         :return: negative log-likelihood of the predictions
         """
         m, n = x.shape  # Get the rows, columns of x
-        pred = arr(self.predictSoft(x))  # Perform a soft prediction of x
+        pred = arr(self.predict_soft(x))  # Perform a soft prediction of x
         pred /= np.sum(pred, axis=1, keepdims=True)  # Normalize the sum to 1
         y = toIndex(y, self.__classes)  # Get indices
         return - np.mean(np.log(pred[np.arange(m)]))  # Find the negative average of the log likelihood
@@ -76,7 +78,7 @@ class Classifier:
 
         try:
             # Try to make a soft prediction
-            soft = self.predictSoft(x)[:, 1]
+            soft = self.predict_soft(x)[:, 1]
         except(AttributeError, IndexError):
             # Make a regular prediction
             soft = self.predict(x)
