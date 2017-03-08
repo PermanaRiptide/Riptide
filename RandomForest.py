@@ -5,19 +5,19 @@ from Utilities import toIndex, fromIndex, to1ofK, from1ofK
 from numpy import asarray as arr
 from numpy import atleast_2d as twod
 from numpy import asmatrix as mat
-from Learner import Classifier as Cl
-
+import Learner as L
 import mltools as ml
 import mltools.dtree
 import matplotlib.pyplot as plt
 
-class RandomForestClassifier():
+
+class RandomForestClassifier(L.Classifier):
 
     __num_learner = 5
-    __threshold = 2.0
+    __threshold = 0.5
     __ensemble = []
 
-    def __init__(self, num_learner=5, threshold=2.0, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Constructor for Random Forest class
         Args:
           *args, **kwargs (optional): passed to train function
@@ -27,15 +27,22 @@ class RandomForestClassifier():
         numLearner : number of trees in the forest.
 
         """
-        self.__num_learner = num_learner
-        self.__threshold = threshold
+        self.classes = []
+
         if len(args) or len(kwargs):
             return self.train(*args, **kwargs)
 
+    # Represents the Classifier
+    def __repr__(self):
+        return str(self)
+
+    # Turns the Classifier into a string
+    def __str__(self):
+        return "Random Forest: [{}]"
 
 ## CORE METHODS ################################################################
 
-    def train(self, X, Y, *args,**kwargs):
+    def train(self, X, Y, num_learner=5, threshold=0.5, *args, **kwargs):
         """ Train the Random Forest
 
         X : M x N numpy array of M data points with N features each
@@ -45,6 +52,16 @@ class RandomForestClassifier():
         maxDepth  : (int)   Maximum depth of the decision tree.
         nFeatures : (int)   Number of available features for splitting at each node.
         """
+
+        self.classes = list(np.unique(Y)) if len(self.classes) == 0 else self.classes   # overload
+        self.__num_learner = num_learner
+        self.__threshold = threshold
+
+        print "__classes     = ", self.classes
+        print "__num_learner = ", self.__num_learner
+        print "__threshold   = ", self.__threshold
+        print "Single Tree param = ", kwargs
+
         for i in range(self.__num_learner):
             Xi, Yi = ml.bootstrapData(X, Y)
             # save ensemble member "i" in a cell array
@@ -74,7 +91,7 @@ class RandomForestClassifier():
 
         return majority_prediction
 
-    def predictSoft(self,X):
+    def predict_soft(self,X):
         """Make soft predictions on the data in X
 
         Args:
@@ -83,10 +100,10 @@ class RandomForestClassifier():
         Returns:
           arr : M,C array of C class probabiities for each data point
         """
-        YpredTree = np.zeros((Xtest.shape[0], 2))
+        YpredTree = np.zeros((X.shape[0], 2))
         for i in range(self.__num_learner):
-            YpredTree += ensemble[i].predictSoft(Xtest)
-            # print i #keeptrack iteration
+            YpredTree += self.__ensemble[i].predictSoft(X)
+            print "iteration = ", i #keeptrack iteration
 
         YpredTree /= float(self.__num_learner)
         return YpredTree
