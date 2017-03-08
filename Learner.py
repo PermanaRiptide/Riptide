@@ -12,7 +12,7 @@ class Classifier:
         Constructor for base classifier.
         Note: This should never be called, except by the derived classes
         """
-        self.__classes = []
+        self.classes = []
         # The derived classes will have a train method
         if len(args) or len(kwargs):
             return self.train(*args, **kwargs)
@@ -31,7 +31,7 @@ class Classifier:
         :return: None
         """
         idx = np.argmax(self.predict_soft(x), axis=1)
-        return np.asarray(self.__classes)[idx]
+        return np.asarray(self.classes)[idx]
 
     def predict_soft(self, x):
         """
@@ -63,7 +63,7 @@ class Classifier:
         m, n = x.shape  # Get the rows, columns of x
         pred = arr(self.predict_soft(x))  # Perform a soft prediction of x
         pred /= np.sum(pred, axis=1, keepdims=True)  # Normalize the sum to 1
-        y = toIndex(y, self.__classes)  # Get indices
+        y = toIndex(y, self.classes)  # Get indices
         return - np.mean(np.log(pred[np.arange(m)]))  # Find the negative average of the log likelihood
 
     def auc(self, x, y):
@@ -73,7 +73,7 @@ class Classifier:
         :param y: M x 1 array of class values for each data point in x
         :return: Area under the ROC curve
         """
-        if len(self.__classes) != 2:  # Check the number of classes
+        if len(self.classes) != 2:  # Check the number of classes
             raise ValueError("This method only supports binary classifications")
 
         try:
@@ -97,13 +97,13 @@ class Classifier:
         rank = r2[np.cumsum(dif[:-1]) - 1]
 
         # Number of true negatives and positives
-        n0, n1 = sum(y == self.__classes[0]), sum(y == self.__classes[1])
+        n0, n1 = sum(y == self.classes[0]), sum(y == self.classes[1])
 
         if n0 == 0 or n1 == 0:
             raise ValueError("Data of both class values not found")
 
         # Compute AUC using Mann-Whitney U statistic
-        result = (np.sum(rank[y == self.__classes[1]]) - n1 * (n1 + 1.0) / 2.0) / n1 / n0
+        result = (np.sum(rank[y == self.classes[1]]) - n1 * (n1 + 1.0) / 2.0) / n1 / n0
         return result
 
     def confusion(self, x, y):
@@ -114,22 +114,22 @@ class Classifier:
         :return: a matrix i x j, # of data from class i that were predicted as class j
         """
         y_hat = self.predict(x)  # Make a prediction
-        num_classes = len(self.__classes)  # Get the number of classes
+        num_classes = len(self.classes)  # Get the number of classes
 
-        indices = toIndex(y, self.__classes) +\
-                  num_classes * (toIndex(y_hat, self.__classes) - 1)
+        indices = toIndex(y, self.classes) +\
+                  num_classes * (toIndex(y_hat, self.classes) - 1)
 
         conf = np.histogram(indices, np.arange(1, num_classes**2 + 2))[0]
         conf = np.reshape(conf, (num_classes, num_classes))
         return np.transpose(conf)
 
     def roc(self, x, y):
-        if len(self.__classes) != 2:  # Check the number of classes
+        if len(self.classes) != 2:  # Check the number of classes
             raise ValueError("This method only supports binary classifications")
 
         try:
             # Try to make a soft prediction
-            soft = self.predictSoft(x)[:, 1]
+            soft = self.predict_soft(x)[:, 1]
         except(AttributeError, IndexError):
             # Make a regular prediction
             soft = self.predict(x)
@@ -138,8 +138,8 @@ class Classifier:
         soft = soft.flatten() if n == 1 else soft.T.flatten()
 
         # Number of true negatives and positives
-        n0 = float(np.sum(y == self.__classes[0]))
-        n1 = float(np.sum(y == self.__classes[1]))
+        n0 = float(np.sum(y == self.classes[0]))
+        n1 = float(np.sum(y == self.classes[1]))
 
         if n0 == 0 or n1 == 0:
             raise ValueError("Data of both class values not found")
@@ -150,9 +150,9 @@ class Classifier:
         s_soft = soft[indices]
 
         # Compute false positives and true positive rates
-        tpr = np.divide(np.cumsum(y[::-1] == self.__classes[1]).astype(float), n1)
-        fpr = np.divide(np.cumsum(y[::-1] == self.__classes[0]).astype(float), n0)
-        tnr = np.divide(np.cumsum(y == self.__classes[0]).astype(float), n0)[::-1]
+        tpr = np.divide(np.cumsum(y[::-1] == self.classes[1]).astype(float), n1)
+        fpr = np.divide(np.cumsum(y[::-1] == self.classes[0]).astype(float), n0)
+        tnr = np.divide(np.cumsum(y == self.classes[0]).astype(float), n0)[::-1]
 
         # Find ties in the sorting score
         same = np.append(np.asarray(s_soft[0:-1] == s_soft[1:]), 0)
