@@ -22,19 +22,32 @@ def testRandomForest():
 
     print "TRAINING RANDOM FOREST"
 
-    my_random_forest = rf.RandomForestClassifier(xtr, ytr, 25, 0.5, nFeatures=2)  # Train a random forest model
+    my_threshold = [0.5]
+    my_allowed_features = [3]
 
-    # etr = my_random_forest.err(xtr, ytr)
-    eva = my_random_forest.err(xva, yva)
-    # atr = my_random_forest.auc(xtr, ytr)
-    ava = my_random_forest.auc(xva, yva)
 
-    # print "Training Error: ", etr
-    print "Validation Error: ", eva
+    for threshold in my_threshold:
+        for number_of_features_allowed in my_allowed_features:
 
-    # print "Training AUC: ", atr
-    print "Validation AUC: ", ava
+            # Train a random forest model :
+            my_random_forest = None
+            my_random_forest = rf.RandomForestClassifier(xtr, ytr, 25, 0.5, nFeatures=number_of_features_allowed)
 
+            # print "my_threshold               = ", threshold
+            # print "number_of_features_allowed = ", number_of_features_allowed
+
+            # etr = my_random_forest.err(xtr, ytr)
+            # print "Training Error: ", etr
+
+            # eva = my_random_forest.err(xva, yva)
+            # print "Validation Error: ", eva
+
+            # atr = my_random_forest.auc(xtr, ytr)
+            # print "Training AUC: ", atr
+
+            ava = my_random_forest.auc(xva, yva)
+            print "Validation AUC = ", ava
+            print "------------------------------------------------------"
 
 ##################
 # Run tests here #

@@ -1,0 +1,8 @@
+__num_learner =  25
+__threshold   =  0.5
+Single Tree param =  {'nFeatures': 2}
+Validation AUC =  0.74934535201
+__num_learner =  25
+__threshold   =  0.5
+Single Tree param =  {'nFeatures': 3}
+Validation AUC =  0.745971082971

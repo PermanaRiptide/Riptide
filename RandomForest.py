@@ -57,7 +57,7 @@ class RandomForestClassifier(L.Classifier):
         self.__num_learner = num_learner
         self.__threshold = threshold
 
-        print "__classes     = ", self.classes
+        # print "__classes     = ", self.classes
         print "__num_learner = ", self.__num_learner
         print "__threshold   = ", self.__threshold
         print "Single Tree param = ", kwargs
@@ -103,7 +103,7 @@ class RandomForestClassifier(L.Classifier):
         YpredTree = np.zeros((X.shape[0], 2))
         for i in range(self.__num_learner):
             YpredTree += self.__ensemble[i].predictSoft(X)
-            print "iteration = ", i #keeptrack iteration
+            # print "iteration = ", i #keeptrack iteration
 
         YpredTree /= float(self.__num_learner)
         return YpredTree
