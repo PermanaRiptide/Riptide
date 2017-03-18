@@ -81,7 +81,7 @@ class treeBase(object):
           maxDepth  (int): Maximum depth of the decision tree. 
           nFeatures (int): Number of available features for splitting at each node.
         """
-        print "my nFeatures = ", nFeatures
+        # print "my nFeatures = ", nFeatures
         n,d = mat(X).shape
         nFeatures = min(nFeatures,d) if nFeatures else d
 

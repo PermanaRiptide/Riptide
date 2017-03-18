@@ -9,13 +9,14 @@ import Learner as L
 import mltools as ml
 import mltools.dtree
 import matplotlib.pyplot as plt
-
+import Utilities as util
 
 class RandomForestClassifier(L.Classifier):
 
     __num_learner = 5
     __threshold = 0.5
     __ensemble = []
+    __confidence_level = None
 
     def __init__(self, *args, **kwargs):
         """Constructor for Random Forest class
@@ -62,11 +63,62 @@ class RandomForestClassifier(L.Classifier):
         print "__threshold   = ", self.__threshold
         print "Single Tree param = ", kwargs
 
+
+#########################################################################################
+        # boosting Part
+
+        # xtr, xva, ytr, yva = util.splitData(X, Y, 0.9)  # Split to test and validation sets
+        x_test = np.genfromtxt("X_test.txt", delimiter="")
+
+        YpredTree = np.zeros((x_test.shape[0], ))
+
+        my_min_leaf = 128
+        print "my_min_leaf : ", my_min_leaf
+        my_max_depth = 4
+        print "my_max_depth : ", my_max_depth
+
+        for i in range(self.__num_learner):
+            print "my_iteration : ", i+1
+
+            Xi, Yi = ml.bootstrapData(X, Y)
+            # save ensemble member "i" in a cell array
+
+            nUse = 5
+            mu = Yi.mean()
+            dY = Yi - mu
+            step = 0.5
+
+            # Pt2 = np.zeros((Xi.shape[0],)) + mu
+            # Pv2 = np.zeros((xva.shape[0],)) + mu
+            Pe2 = np.zeros((x_test.shape[0],)) + mu
+
+            for l in range(nUse):  # this is a lot faster than the bagging loop:
+                print "my_boosting : ", l + 1
+                # Better: set dY = gradient of loss at soft predictions Pt
+                # Note: treeRegress expects 2D target matrix
+                tree = ml.dtree.treeRegress(Xi, dY[:, np.newaxis], nFeatures=2)  # ,minLeaf=my_min_leaf train and save learner
+                # Pt2 += step * tree.predict(Xi)[:, 0]  # predict on training data
+                # Pv2 += step * tree.predict(xva)[:, 0]  # and validation data
+                Pe2 += step * tree.predict(x_test)[:, 0]  # and test data
+                dY -= step * tree.predict(Xi)[:, 0]  # update residual for next learner
+
+                # print " {} Tr trees: MSE ~ {}; ".format(l + 1, ((Yi - Pt2) ** 2).mean())
+
+            YpredTree += Pe2
+            # self.__ensemble.append(ml.dtree.treeClassify(Xi, Yi, *args, **kwargs))
+
+        YpredTree /= float(self.__num_learner)
+        self.__confidence_level = YpredTree
+#########################################################################################
+
+        '''# Without Boosting
         for i in range(self.__num_learner):
             Xi, Yi = ml.bootstrapData(X, Y)
             # save ensemble member "i" in a cell array
             self.__ensemble.append(ml.dtree.treeClassify(Xi, Yi, *args, **kwargs))
+        '''
 
+#########################################################################################
 
     def predict(self,X):
         """Make predictions on the data in X
@@ -103,8 +155,12 @@ class RandomForestClassifier(L.Classifier):
         YpredTree = np.zeros((X.shape[0], 2))
         for i in range(self.__num_learner):
             YpredTree += self.__ensemble[i].predictSoft(X)
-            # print "iteration = ", i #keeptrack iteration
+            print "iteration = ", i #keeptrack iteration
 
         YpredTree /= float(self.__num_learner)
+        self.__confidence_level = YpredTree
         return YpredTree
+
+    def get_confidence(self):
+        return self.__confidence_level
 
