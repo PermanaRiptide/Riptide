@@ -87,7 +87,7 @@ for pair in my_pair:
         print "my Validation AUC : ", my_auc
         # print "mean_accuracy : ", clf.score(xva, yva)
 
-        ### predict soft:
+        ###################################### predict soft:
 
         YpredTree = clf.predict_proba(x_test)
 

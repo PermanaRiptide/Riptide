@@ -3,6 +3,19 @@ import RandomForest as rf
 import numpy as np
 import matplotlib.pyplot as plt
 import Utilities as util
+import mltools as ml
+
+
+def transformxy(x, y):
+    x = ml.transforms.fpoly(x, 2, bias=False)
+    x, p = ml.transforms.rescale(x)
+    return x, y, p
+
+
+def transformx(x, p):
+    x = ml.transforms.fpoly(x, 2, bias=False)
+    x, _ = ml.transforms.rescale(x, p)
+    return x
 
 def testRandomForest():
 
@@ -13,7 +26,11 @@ def testRandomForest():
     print "GENERATING DATA FROM TEXT"
     x = np.genfromtxt("X_train.txt", delimiter="", max_rows=n_training_data)
     y = np.genfromtxt("Y_train.txt", delimiter="", max_rows=n_training_data)
-    # x_test = np.genfromtxt("X_test.txt", delimiter="")
+    x_test = np.genfromtxt("X_test.txt", delimiter="")
+
+    # x , y , p = transformxy(origin_x, origin_y)
+    # print x.shape[1]
+
 
     # print y
     # print np.unique(y)
@@ -26,7 +43,9 @@ def testRandomForest():
 
     my_threshold = [0.5]
     my_allowed_features = [2]
-    my_nBags = [100]
+    my_nBags = [10]
+    boosted_status = True
+
 
     for nBags in my_nBags:
         for threshold in my_threshold:
@@ -34,7 +53,11 @@ def testRandomForest():
 
                 # Train a boosted random forest model :
                 my_random_forest = \
-                    rf.RandomForestClassifier(x, y, nBags, threshold)  # nFeatures=number_of_features_allowed
+                    rf.RandomForestClassifier(x, y,
+                                              Xtest=x_test, # for boosted prediction
+                                              isboosted=boosted_status, num_learner=nBags, threshold=threshold,
+                                              nFeatures=number_of_features_allowed  # dtree paremeters
+                                              )  # nFeatures=number_of_features_allowed
 
     ######################################################################################
                 # Train a original random forest model :
@@ -67,14 +90,25 @@ def testRandomForest():
     ######################################################################################
                 # save confidence to txt:
 
-                output_filename = 'results/Yhat_boosted_tree-' + str(n_training_data) \
-                                  + '-nbags_' + str(nBags) \
-                                  + '-nfeat_' + str(number_of_features_allowed) \
-                                  + '-thrs_' + str(threshold) + '.txt'
+                output_filename = ""
 
-                np.savetxt(output_filename,
-                np.vstack((np.arange(len(YpredTree)), YpredTree[:, ])).T,       # original: YpredTree[:, 1]
-                '%d, %.2f', header='ID,Prob1', comments='', delimiter=',');
+                if boosted_status:
+                    output_filename = 'results/Yhat_rf_-' + str(n_training_data) \
+                                      + '-nbags_' + str(nBags) \
+                                      + '-nfeat_' + str(number_of_features_allowed) \
+                                      + '-thrs_' + str(threshold) + '.txt'
+                    np.savetxt(output_filename,
+                    np.vstack((np.arange(len(YpredTree)), YpredTree[:, ])).T,       # original: YpredTree[:, 1]
+                    '%d, %.2f', header='ID,Prob1', comments='', delimiter=',')
+
+                else:
+                    output_filename = 'results/Yhat_boosted_tree-' + str(n_training_data) \
+                                      + '-nbags_' + str(nBags) \
+                                      + '-nfeat_' + str(number_of_features_allowed) \
+                                      + '-thrs_' + str(threshold) + '.txt'
+                    np.savetxt(output_filename,
+                    np.vstack((np.arange(len(YpredTree)), YpredTree[:, 1])).T,
+                    '%d, %.2f', header='ID,Prob1', comments='', delimiter=',')
 
                 print "Saved : ", output_filename
 
