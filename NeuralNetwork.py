@@ -30,7 +30,7 @@ class NeuralNetworkFactory:
         self.__debug = debug
         NeuralNetworkFactory.__first_time = False
 
-    def create(self, x, y, xte):
+    def create(self, x, y):
         if self.__debug:
             print "Creating Model..."
         m, p = self.__create_model(x, y)
@@ -47,6 +47,10 @@ class NeuralNetworkFactory:
             print "Training Accuracy: ", scores[1]
             print "Training AUC: ", auc
         return scores[1], auc
+
+    def predict(self, x, p, m):
+        x = self.__transformx(x, p)
+        return m.predict_proba(x)
 
     def kaggle(self, x, m, p, text_file):
         x = self.__transformx(x, p)
@@ -74,11 +78,11 @@ class NeuralNetworkFactory:
         m = Sequential()
         if self.__debug:
             print "Adding Layers (5) with 60 Nodes each to Model"
-        m.add(Dense(60, input_dim=x.shape[1], kernel_initializer='uniform', activation='relu'))
-        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
-        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
-        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
-        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(50, input_dim=x.shape[1], kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(50, kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(50, kernel_initializer='uniform', activation='relu'))
+        # m.add(Dense(80, kernel_initializer='uniform', activation='relu'))
+        # m.add(Dense(80, kernel_initializer='uniform', activation='relu'))
         m.add(Dense(1,  kernel_initializer='uniform', activation='sigmoid'))
         if self.__debug:
             print "Model Summary: "
@@ -92,7 +96,23 @@ class NeuralNetworkFactory:
         m.fit(x, y, epochs=150, batch_size=15, verbose=2)
         return m, p
 
-# ''' Example Run
+
+"""
+        x, y, p = self.__transformxy(x, y)
+        m = Sequential()
+        if self.__debug:
+            print "Adding Layers (5) with 60 Nodes each to Model"
+        m.add(Dense(60, input_dim=x.shape[1], kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(60, kernel_initializer='uniform', activation='relu'))
+        m.add(Dense(1,  kernel_initializer='uniform', activation='sigmoid'))
+        if self.__debug:
+            print "Model Summary: "
+            print m.summary()
+"""
+''' Example Run
 seed = 27
 np.random.seed(seed)
 
@@ -104,7 +124,7 @@ NN = NeuralNetworkFactory(True)
 model, p = NN.create(X, Y, Xte)
 NN.eval_model(X, Y, p, model, True)
 NN.kaggle(Xte, model, p, "nny_test.txt")
-# '''
+'''
 
 # Scores for Reference
 '''
