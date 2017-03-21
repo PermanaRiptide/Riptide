@@ -1,15 +1,14 @@
-# Random Forest Classifier
-# Derives from Classifier in Learner.py
+"""
+Random Forest Classifier
+"""
+
 import numpy as np
-from Utilities import toIndex, fromIndex, to1ofK, from1ofK
-from numpy import asarray as arr
-from numpy import atleast_2d as twod
-from numpy import asmatrix as mat
 import Learner as L
 import mltools as ml
-import mltools.dtree
-import matplotlib.pyplot as plt
 import Utilities as util
+
+################################################################################
+# Helper Functions:
 
 
 def auc(soft, Y):
@@ -63,9 +62,9 @@ class RandomForestClassifier(L.Classifier):
     def __str__(self):
         return "Random Forest: [{}]"
 
-## CORE METHODS ################################################################
+# CORE METHODS ################################################################
 
-    def train(self, X, Y, Xtest = None, isboosted=False,time_to_train=5,num_learner=5, threshold=0.5, *args, **kwargs):
+    def train(self, X, Y, Xtest = None, isboosted=False,time_to_train=10,num_learner=5, threshold=0.5, *args, **kwargs):
         """ Train the Random Forest
 
         X : M x N numpy array of M data points with N features each
@@ -90,9 +89,9 @@ class RandomForestClassifier(L.Classifier):
 
 #########################################################################################
 
-        # boosting Part
+        # With Boosting :
 
-        # xtr, xva, ytr, yva = util.splitData(X, Y, 0.9)  # Split to test and validation sets
+        xtr, xva, ytr, yva = util.splitData(X, Y, 0.9)  # Split to test and validation sets
         x_test = Xtest
 
         if self.__isBoosted:
@@ -101,15 +100,18 @@ class RandomForestClassifier(L.Classifier):
 
             YpredTree = np.zeros((x_test.shape[0], ))
 
-            my_min_leaf = 128
-            print "my_min_leaf : ", my_min_leaf
-            my_max_depth = 4
-            print "my_max_depth : ", my_max_depth
+            # Embedded single tree parameters:
+            # my_min_leaf = 128
+            # print "my_min_leaf : ", my_min_leaf
+            # my_max_depth = 4
+            # print "my_max_depth : ", my_max_depth
+            # my_n_features = 2
+            # print "my_n_features : ", my_n_features
 
             for i in range(self.__num_learner):
                 print "my_iteration : ", i+1
 
-                Xi, Yi = ml.bootstrapData(X, Y)
+                Xi, Yi = ml.bootstrapData(xtr, ytr)     # (xtr, ytr)
                 # save ensemble member "i" in a cell array
 
                 nUse = time_to_train
@@ -117,8 +119,8 @@ class RandomForestClassifier(L.Classifier):
                 dY = Yi - mu
                 step = 0.5
 
-                # Pt2 = np.zeros((Xi.shape[0],)) + mu
-                # Pv2 = np.zeros((xva.shape[0],)) + mu
+                Pt2 = np.zeros((Xi.shape[0],)) + mu
+                Pv2 = np.zeros((xva.shape[0],)) + mu
                 Pe2 = np.zeros((x_test.shape[0],)) + mu
 
                 tree = None
@@ -127,14 +129,14 @@ class RandomForestClassifier(L.Classifier):
                     # Better: set dY = gradient of loss at soft predictions Pt
                     # Note: treeRegress expects 2D target matrix
                     tree = ml.dtree.treeRegress(Xi, dY[:, np.newaxis], *args, **kwargs)  # ,minLeaf=my_min_leaf train and save learner
-                    # Pt2 += step * tree.predict(Xi)[:, 0]  # predict on training data
-                    # Pv2 += step * tree.predict(xva)[:, 0]  # and validation data
-                    Pe2 += step * tree.predict(x_test)[:, 0]  # and test data
+                    Pt2 += step * tree.predict(Xi)[:, 0]  # predict on training data
+                    Pv2 += step * tree.predict(xva)[:, 0]  # and validation data
+                    # Pe2 += step * tree.predict(x_test)[:, 0]  # and test data
                     dY -= step * tree.predict(Xi)[:, 0]  # update residual for next learner
 
-                # print " {} Tr trees: MSE ~ {};  AUC - {};".format(l + 1, ((ytr - Pt2) ** 2).mean(), auc(Pt2, ytr))
-                # print " {} V  trees: MSE ~ {};  AUC - {};".format(l + 1, ((yva - Pv2) ** 2).mean(), auc(Pv2, yva))
-
+                    print " {} Tr trees: MSE ~ {};  AUC - {};".format(l + 1, ((ytr - Pt2) ** 2).mean(), auc(Pt2, ytr))
+                    print " {} V  trees: MSE ~ {};  AUC - {};".format(l + 1, ((yva - Pv2) ** 2).mean(), auc(Pv2, yva))
+                exit()
                 self.__ensemble.append(tree)
                 YpredTree += Pe2
 

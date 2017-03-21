@@ -1,6 +1,5 @@
 """
-This predictor will combine confidence files, taking majority results
-then average the majority
+This predictor will combine confidence files, taking average, and update its weight
 see commented part below
 """
 
@@ -11,12 +10,13 @@ from collections import Counter
 
 def parse_files():
 
-    my_path = 'C:/Users/Kyaa/Documents/GitHub/Riptide/inputdata/'
+    my_path = 'C:/Users/Kyaa/Desktop/combined/'  # path file
 
     list_of_confidence = []
 
     YpredTree = np.zeros((100000,))
     count = 0
+    count_change_direction = 0
 
     for root, dirs, file_names in os.walk(my_path):
         # print root
@@ -36,16 +36,11 @@ def parse_files():
             for i in range(count): # number of files
                 my_temp_confidence.append(list_of_confidence[i][j])
 
-#################################################################################################
-            # get majority point:
-
             # print "my_length : ",len(my_temp_confidence)
             # print "temp_confidence : ", my_temp_confidence
             my_majority = Counter([round(k,1) for k in my_temp_confidence])
             value, occurrence = my_majority.most_common()[0]
             # print value, occurrence
-
-#################################################################################################
 
             if occurrence == 1:
                 # print "row : ", j
@@ -59,11 +54,11 @@ def parse_files():
                 # print "majority : ", value, occurrence
                 for k in my_temp_confidence:
                     temp_difference = abs(value-k)
-                    if temp_difference > 0.075:     # check if the result is not in majority
+                    if temp_difference > 0.075:
 
                         my_temp_list_outside.append(k)
                     else:
-                        my_temp_list_inside.append(k)       # get majority results
+                        my_temp_list_inside.append(k)
 
                 if len(my_temp_list_inside) > 12:
 
@@ -75,21 +70,34 @@ def parse_files():
                     value = sum(my_temp_confidence)/float(count)
                     # print "mean value : ", value, ", out of ", len(my_temp_list_outside)
 
+################################################################################################
+                # update the value based on weight:
+
+                if value < 0.5:
+                    value += 0.1
+                    if value > 0.5:
+                        count_change_direction += 1
+
                 YpredTree[j] += value
 
-                # print my_temp_list
             else:
                 # my_occurrence_counter += 1       # should be 0 here
+                if value < 0.5:
+                    value += 0.1
+                    if value > 0.5:
+                        count_change_direction += 1
+
                 YpredTree[j] += value
 
-#################################################################################################
+################################################################################################
 
         print "my_occurrence_counter : ", my_occurrence_counter
+        print "count_change_direction", count_change_direction
         print "num of Files : ", count
         print YpredTree
 
         # save it into txt:
-        output_filename = 'results_combined/Yhat_dtree5.txt'
+        output_filename = 'all_New_Yhat_weighted.txt'
 
         # np.savetxt(output_filename,
         # np.vstack((np.arange(len(YpredTree)), YpredTree[:, ])).T,  # YpredTree[:, 1]

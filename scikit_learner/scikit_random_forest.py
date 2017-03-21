@@ -1,3 +1,8 @@
+# Modified for learning purpose from:
+# http://scikit-learn.org/stable/auto_examples/ensemble/plot_forest_iris.html
+# Random Forest Scikit Classifier:
+# http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8,14 +13,31 @@ from sklearn.ensemble import (RandomForestClassifier, ExtraTreesClassifier,
 from sklearn.externals.six.moves import xrange
 from sklearn.tree import DecisionTreeClassifier
 
-
+#######################################################################################
 from sklearn.metrics import roc_auc_score
 import itertools
 import Utilities as util
+import transforms
 
+#######################################################################################
+# Helper Functions:
+
+
+def transformxy(x, y):
+    x = transforms.fpoly(x, 2, bias=False)
+    x, p = transforms.rescale(x)
+    return x, y, p
+
+
+def transformx(x, p):
+    x = transforms.fpoly(x, 2, bias=False)
+    x, _ = transforms.rescale(x, p)
+    return x
+
+############################################################################
 # Parameters
 n_classes = 2
-n_estimators = 1000
+n_estimators = 25
 plot_colors = "rb"
 cmap = plt.cm.RdYlBu
 plot_step = 0.02  # fine step width for decision surface contours
@@ -27,16 +49,21 @@ RANDOM_SEED = 13  # fix the seed on each iteration
 
 n_training_data = 100000
 ############################################################################
-
 # Get data from text
 print "GENERATING DATA FROM TEXT"
 my_x = np.genfromtxt("C:/Users/Kyaa/Documents/GitHub/Riptide/X_train.txt", delimiter="", max_rows=n_training_data)
 my_y = np.genfromtxt("C:/Users/Kyaa/Documents/GitHub/Riptide/Y_train.txt", delimiter="", max_rows=n_training_data)
-x_test = np.genfromtxt("C:/Users/Kyaa/Documents/GitHub/Riptide/X_test.txt", delimiter="")
+Xtest = np.genfromtxt("C:/Users/Kyaa/Documents/GitHub/Riptide/X_test.txt", delimiter="")
 
-xtr, xva, ytr, yva = util.splitData(my_x, my_y, 0.9)  # Split to test and validation sets
+X, Y, p = transformxy(my_x, my_y)
+x_test = transformx(Xtest,p)
+print X.shape[1]
+print x_test.shape[1]
+
+xtr, xva, ytr, yva = util.splitData(X, Y, 0.9)  # Split to test and validation sets
 
 ############################################################################
+# Scikit-learner model
 
 plot_idx = 1
 
@@ -48,15 +75,22 @@ plot_idx = 1
 #           AdaBoostClassifier(DecisionTreeClassifier(max_depth=3),
 #                             n_estimators=n_estimators)]
 
-models = [RandomForestClassifier(n_estimators=n_estimators,max_features=2)
+class_weight = {0: 9,1:1}
+
+models = [
+RandomForestClassifier(n_estimators=n_estimators,max_features=2,warm_start=True,class_weight=class_weight),
+RandomForestClassifier(n_estimators=n_estimators,max_features=2,class_weight=class_weight),
+RandomForestClassifier(n_estimators=n_estimators,max_features=2)
           ]
+
+############################################################################
 
 my_pair = itertools.combinations([0,1,2,3,4,5,6,7,8,9,10,11,12,13],2)
 
 my_pair = ([0,8],[0,6],[0,4],[0,10],[0,11])
 
 for pair in my_pair:
-    if pair == [0,6]: break
+    if pair == [0,6]: break         # run only one, can choose pair
     for model in models:
         # We only take the two corresponding features
         # X = iris.data[:, pair]
@@ -87,19 +121,18 @@ for pair in my_pair:
         print "my Validation AUC : ", my_auc
         # print "mean_accuracy : ", clf.score(xva, yva)
 
-        ###################################### predict soft:
+        ###################################### predict soft, put it into txt:
 
         YpredTree = clf.predict_proba(x_test)
 
-        output_filename = 'scikit_results/Yhat_random_forest-nbags_'+str(n_estimators)+'-AUC_'+ str("%.2f" % my_auc) +'.txt'
+        output_filename = 'scikit_results/Yhat_RF-nbags_'+str(n_estimators)+'-AUC_'+ str("%.2f" % my_auc) +'.txt'
 
-        np.savetxt(output_filename,
-                   np.vstack((np.arange(len(YpredTree)), YpredTree[:, 1])).T,
-                   '%d, %.2f', header='ID,Prob1', comments='', delimiter=',')
+        # np.savetxt(output_filename,
+        #            np.vstack((np.arange(len(YpredTree)), YpredTree[:, 1])).T,
+        #            '%d, %.2f', header='ID,Prob1', comments='', delimiter=',')
 
         print "Saved : ", output_filename
         #######################################################################################
-
 
         scores = clf.score(X, y)
 
@@ -110,6 +143,11 @@ for pair in my_pair:
         if hasattr(model, "estimators_"):
             model_details += " with {} estimators".format(len(model.estimators_))
         print( model_details + " with features", pair, "has a score of", scores )
+        print ""
+
+        #######################################################################################
+
+# Plotting:
 
 #         plt.subplot(3, 4, plot_idx)
 #         if plot_idx <= len(models):
